@@ -33,7 +33,7 @@ create table wvp_device (
                             keepalive_interval_time integer,
                             switch_primary_sub_stream bool default false,
                             constraint uk_device_device unique (device_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_device_alarm (
                                   id serial primary key ,
@@ -47,7 +47,7 @@ create table wvp_device_alarm (
                                   latitude double precision,
                                   alarm_type character varying(50),
                                   create_time character varying(50) not null
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_device_channel (
                                     id serial primary key ,
@@ -88,7 +88,7 @@ create table wvp_device_channel (
                                     business_group_id character varying(50),
                                     gps_time character varying(50),
                                     constraint uk_wvp_device_channel_unique_device_channel unique (device_id, channel_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_device_mobile_position (
                                             id serial primary key,
@@ -107,7 +107,7 @@ create table wvp_device_mobile_position (
                                             longitude_wgs84 double precision,
                                             latitude_wgs84 double precision,
                                             create_time character varying(50)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_gb_stream (
                                gb_stream_id serial primary key,
@@ -122,7 +122,7 @@ create table wvp_gb_stream (
                                create_time character varying(50),
                                constraint uk_gb_stream_unique_gb_id unique (gb_id),
                                constraint uk_gb_stream_unique_app_stream unique (app, stream)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_log (
                          id serial primary key ,
@@ -134,7 +134,7 @@ create table wvp_log (
                          timing bigint,
                          username character varying(50),
                          create_time character varying(50)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_media_server (
                                   id character varying(255) primary key ,
@@ -159,7 +159,7 @@ create table wvp_media_server (
                                   update_time character varying(50),
                                   hook_alive_interval integer,
                                   constraint uk_media_server_unique_ip_http_port unique (ip, http_port)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_platform (
                               id serial primary key ,
@@ -189,7 +189,7 @@ create table wvp_platform (
                               update_time character varying(50),
                               as_message_channel bool default false,
                               constraint uk_platform_unique_server_gb_id unique (server_gb_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_platform_catalog (
                                       id character varying(50),
@@ -199,7 +199,7 @@ create table wvp_platform_catalog (
                                       civil_code character varying(50),
                                       business_group_id character varying(50),
                                       constraint uk_platform_catalog_id_platform_id unique (id, platform_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_platform_gb_channel (
                                          id serial primary key ,
@@ -207,7 +207,7 @@ create table wvp_platform_gb_channel (
                                          catalog_id character varying(50),
                                          device_channel_id integer,
                                          constraint uk_platform_gb_channel_platform_id_catalog_id_device_channel_id unique (platform_id, catalog_id, device_channel_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_platform_gb_stream (
                                         id serial primary key,
@@ -215,7 +215,7 @@ create table wvp_platform_gb_stream (
                                         catalog_id character varying(50),
                                         gb_stream_id integer,
                                         constraint uk_platform_gb_stream_platform_id_catalog_id_gb_stream_id unique (platform_id, catalog_id, gb_stream_id)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_stream_proxy (
                                   id serial primary key,
@@ -239,7 +239,7 @@ create table wvp_stream_proxy (
                                   update_time character varying(50),
                                   enable_disable_none_reader bool default false,
                                   constraint uk_stream_proxy_app_stream unique (app, stream)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_stream_push (
                                  id serial primary key,
@@ -257,7 +257,7 @@ create table wvp_stream_push (
                                  push_ing bool default false,
                                  self bool default false,
                                  constraint uk_stream_push_app_stream unique (app, stream)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_user (
                           id serial primary key,
@@ -268,7 +268,7 @@ create table wvp_user (
                           update_time character varying(50),
                           push_key character varying(50),
                           constraint uk_user_username unique (username)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 create table wvp_user_role (
                                id serial primary key,
@@ -276,7 +276,7 @@ create table wvp_user_role (
                                authority character varying(50),
                                create_time character varying(50),
                                update_time character varying(50)
-);
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
 /*初始数据*/
 INSERT INTO wvp_user VALUES (1, 'admin','21232f297a57a5a743894a0e4a801fc3',1,'2021-04-13 14:14:57','2021-04-13 14:14:57','3e80d1762a324d5b0ff636e0bd16f1e3');

@@ -9,6 +9,8 @@ services:
     environment:
       TZ: "Asia/Shanghai"
     command: redis-server /etc/redis/redis_default.conf --appendonly yes
+    networks:
+      - wvp-net
   wvp:
     build:
       context: ./wvp
@@ -47,3 +49,9 @@ services:
       WVP_CONFIG:
     depends_on:
       - redis
+    networks:
+      - wvp-net
+      
+networks:
+  wvp-net:
+    driver: bridge
