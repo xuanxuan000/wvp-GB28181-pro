@@ -32,17 +32,19 @@ services:
       - ./logs/wvp:/opt/wvp/logs/
       - ./logs/assist:/opt/assist/logs/
       - ./logs/media:/opt/media/log/
+      - ./config-wvp:/opt/wvp/config
+      - ./config-assist:/opt/assist/config
     environment:
       TZ: "Asia/Shanghai"
-      # [必须修改] 本机的IP
-      WVP_HOST: 172.18.0.61
+      # [必须修改] 本机的IP docker启动用0.0.0.0需要修改配置中的stream-id等
+      WVP_HOST: 0.0.0.0
       WVP_PWD: aseqw_+hiy123
       WVP_DOMAIN: 6101130049
       WVP_ID: 61011300490000000001
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 6
-      REDIS_PWD: root
+      REDIS_PWD:
       ASSIST_JVM_CONFIG: -Xms128m -Xmx256m
       WVP_JVM_CONFIG: -Xms128m -Xmx256m
       ASSIST_CONFIG:

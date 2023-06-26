@@ -26,10 +26,10 @@ RUN cd /home/wvp-GB28181-pro && \
 RUN cd /home && \
 		git clone "${gitUrl}/wvp-pro-assist.git"
 RUN cd /home/wvp-pro-assist && \
-	git reset --hard 58f1a79136a55a7cd1593c95b56ddadcc2225b61 && \
+	# git reset --hard 58f1a79136a55a7cd1593c95b56ddadcc2225b61 && \
         mvn clean package -Dmaven.test.skip=true && \
         cp /home/wvp-pro-assist/target/*.jar /opt/assist/ && \
-        cp /home/wvp-pro-assist/src/main/resources/application-dev.yml /opt/assist/config/application.yml
+        cp /home/wvp-GB28181-pro/src/main/resources/application-assist.yml /opt/assist/config/application.yml
 
 RUN cd /home && \
         git clone --depth=1 "${zlmGitUrl}"
