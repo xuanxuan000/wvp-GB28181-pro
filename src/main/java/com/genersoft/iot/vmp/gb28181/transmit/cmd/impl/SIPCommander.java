@@ -578,13 +578,14 @@ public class SIPCommander implements ISIPCommander {
             // 添加流注销的订阅，注销了后向设备发送bye
             subscribe.addSubscribe(hookSubscribe,
                     (MediaServerItem mediaServerItemForEnd, JSONObject jsonForEnd) -> {
-                        logger.info("[录像]下载结束， 发送BYE");
-                        try {
-                            streamByeCmd(device, channelId, ssrcInfo.getStream(), callId);
-                        } catch (InvalidArgumentException | ParseException | SipException |
-                                 SsrcTransactionNotFoundException e) {
-                            logger.error("[录像]下载结束， 发送BYE失败 {}", e.getMessage());
-                        }
+                        logger.info("[录像]下载结束， 暂时取消发送BYE 直接进行合并");
+                        // logger.info("[录像]下载结束， 发送BYE");
+                        // try {
+                        //     streamByeCmd(device, channelId, ssrcInfo.getStream(), callId);
+                        // } catch (InvalidArgumentException | ParseException | SipException |
+                        //          SsrcTransactionNotFoundException e) {
+                        //     logger.error("[录像]下载结束， 发送BYE失败 {}", e.getMessage());
+                        // }
                     });
         });
 

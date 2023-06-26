@@ -12,11 +12,12 @@ services:
     networks:
       - wvp-net
   wvp:
-    build:
-      context: ./wvp
-      args:
-        gitUrl: "https://gitee.com/pan648540858"
-        zlmGitUrl: "https://gitee.com/xia-chu/ZLMediaKit"
+    # build:
+    #   context: ./wvp
+    #   args:
+    #     gitUrl: "https://gitee.com/pan648540858"
+    #     zlmGitUrl: "https://gitee.com/xia-chu/ZLMediaKit"
+    image: huahua000/wvp:v1
     restart: always
     ports:
       - "5060:5060"
