@@ -39,6 +39,17 @@ import javax.sip.header.CallIdHeader;
 import javax.sip.message.Request;
 import java.text.ParseException;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.HttpClientBuilder;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 /**
  * @description:设备能力接口，用于定义设备的控制、查询能力
  * @author: swwheihei
@@ -578,7 +589,10 @@ public class SIPCommander implements ISIPCommander {
             // 添加流注销的订阅，注销了后向设备发送bye
             subscribe.addSubscribe(hookSubscribe,
                     (MediaServerItem mediaServerItemForEnd, JSONObject jsonForEnd) -> {
-                        logger.info("[录像]下载结束， 暂时取消发送BYE 直接进行合并");
+                        logger.info("[录像]下载结束， 暂时取消发送BYE 直接合成录像并通知manage服务");
+                        logger.info(mediaServerItemInUse.getId());
+                        logger.info(ssrcInfo.getStream());
+                        complexVideo(mediaServerItemInUse.getId(), ssrcInfo.getStream());
                         // logger.info("[录像]下载结束， 发送BYE");
                         // try {
                         //     streamByeCmd(device, channelId, ssrcInfo.getStream(), callId);
@@ -600,6 +614,30 @@ public class SIPCommander implements ISIPCommander {
             okEvent.response(event);
         });
     }
+
+    /**
+     * 录像合成
+     */
+    public void complexVideo(String mdsId, String streamID) {
+        HttpClient client = HttpClientBuilder.create().build();
+        HttpGet request = new HttpGet(String.format("http://127.0.0.1:18080/record_proxy/%s/api/record/file/download/task/add?app=rtp&stream=%s", mdsId, streamID));
+        try {
+            HttpResponse response = client.execute(request);
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                try (InputStream stream = entity.getContent()) {
+                    BufferedReader reader =
+                            new BufferedReader(new InputStreamReader(stream));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    } 
 
     /**
      * 视频流停止, 不使用回调
