@@ -7,14 +7,15 @@ COPY ./sources.list /etc/apt/
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
         apt-get update && \
-        apt-get install -y --no-install-recommends openjdk-11-jre git maven nodejs npm build-essential && \
+        apt-get install -y --no-install-recommends openjdk-11-jre git maven nodejs npm build-essential \
+        cmake ca-certificates openssl ffmpeg && \
         mkdir -p /opt/wvp/config /opt/wvp/heapdump /opt/wvp/config /opt/assist/config /opt/assist/heapdump /opt/media/www/record && \
         
-        git clone "${gitUrl}" && \
+        cd /home && \
+        git clone -b huahua "${gitUrl}" && \
 
         # settings.xml
-        cd /home && \
-        cp wvp-GB28181-pro/settings.xml /usr/share/maven/conf/ && \
+        cp /home/wvp-GB28181-pro/settings.xml /usr/share/maven/conf/ && \
 
         # 前端编译
         cd /home/wvp-GB28181-pro/web_src && \
@@ -30,7 +31,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         # wvp-pro-assist编译
         cd /home/wvp-GB28181-pro/wvp-pro-assist && \
         mvn clean package -Dmaven.test.skip=true && \
-        cp /home/wvp-pro-assist/target/*.jar /opt/assist/ && \
+        cp /home/wvp-GB28181-pro/wvp-pro-assist/target/*.jar /opt/assist/ && \
 
         # zlm编译
         cd /home && \
