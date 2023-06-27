@@ -420,7 +420,7 @@ public class VideoFileService {
             });
         }
         // 通知manage服务 文件合并已完成
-        manageInfo("video" + File.separator + destDir);
+        manageInfo("video" + File.separator + destDir + File.separator + stream + ".mp4" );
         return taskId;
     }
 
