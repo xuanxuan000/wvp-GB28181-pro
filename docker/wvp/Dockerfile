@@ -3,10 +3,9 @@ FROM ubuntu:20.04   as   build
 ARG gitUrl="https://gitee.com/Flower_12/wvp-GB28181-pro.git"
 ARG zlmGitUrl="https://gitee.com/xia-chu/ZLMediaKit"
 
-# COPY ./* /home/wvp-GB28181-pro/
+COPY ./sources.list /etc/apt/
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
-        cp /home/wvp-GB28181-pro/sources.list /etc/apt/ && \
         apt-get update && \
         apt-get install -y --no-install-recommends openjdk-11-jre git maven nodejs npm build-essential && \
         mkdir -p /opt/wvp/config /opt/wvp/heapdump /opt/wvp/config /opt/assist/config /opt/assist/heapdump /opt/media/www/record && \
