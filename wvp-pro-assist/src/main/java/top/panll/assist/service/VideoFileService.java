@@ -398,6 +398,7 @@ public class VideoFileService {
             String key = String.format("%S_%S_%S_%S_%S", AssistConstants.MERGEORCUT , userSettings.getId(), mergeOrCutTaskInfo.getApp(), mergeOrCutTaskInfo.getStream(), mergeOrCutTaskInfo.getId());
             redisUtil.set(key, mergeOrCutTaskInfo);
             logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
+            manageInfo("video" + File.separator + destDir + File.separator + stream + ".mp4" );
         }else {
             ffmpegExecUtils.mergeOrCutFile(filesInTime, recordFile, stream, (status, percentage, result)->{
                 // 发出redis通知
@@ -412,6 +413,7 @@ public class VideoFileService {
                         mergeOrCutTaskInfo.setPlayFile(remoteHost + "/download/" + relativize);
                     }
                     logger.info("[录像合并] 合并完成，APP:{}, STREAM: {}, 任务ID：{}", app, stream, taskId);
+                    manageInfo("video" + File.separator + destDir + File.separator + stream + ".mp4" );
                 }else {
                     mergeOrCutTaskInfo.setPercentage(percentage + "");
                 }
@@ -420,7 +422,7 @@ public class VideoFileService {
             });
         }
         // 通知manage服务 文件合并已完成
-        manageInfo("video" + File.separator + destDir + File.separator + stream + ".mp4" );
+        // manageInfo("video" + File.separator + destDir + File.separator + stream + ".mp4" );
         return taskId;
     }
 
