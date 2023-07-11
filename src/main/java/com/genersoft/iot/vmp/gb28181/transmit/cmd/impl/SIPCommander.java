@@ -1,13 +1,14 @@
 package com.genersoft.iot.vmp.gb28181.transmit.cmd.impl;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.genersoft.iot.vmp.common.InviteSessionType;
 import com.genersoft.iot.vmp.common.StreamInfo;
 import com.genersoft.iot.vmp.conf.SipConfig;
 import com.genersoft.iot.vmp.conf.UserSetting;
 import com.genersoft.iot.vmp.conf.exception.SsrcTransactionNotFoundException;
 import com.genersoft.iot.vmp.gb28181.SipLayer;
-import com.genersoft.iot.vmp.gb28181.bean.*;
+import com.genersoft.iot.vmp.gb28181.bean.Device;
+import com.genersoft.iot.vmp.gb28181.bean.DeviceAlarm;
+import com.genersoft.iot.vmp.gb28181.bean.SsrcTransaction;
 import com.genersoft.iot.vmp.gb28181.event.SipSubscribe;
 import com.genersoft.iot.vmp.gb28181.session.VideoStreamSessionManager;
 import com.genersoft.iot.vmp.gb28181.transmit.SIPSender;
@@ -19,6 +20,7 @@ import com.genersoft.iot.vmp.media.zlm.ZlmHttpHookSubscribe;
 import com.genersoft.iot.vmp.media.zlm.dto.HookSubscribeFactory;
 import com.genersoft.iot.vmp.media.zlm.dto.HookSubscribeForStreamChange;
 import com.genersoft.iot.vmp.media.zlm.dto.MediaServerItem;
+import com.genersoft.iot.vmp.media.zlm.dto.hook.HookParam;
 import com.genersoft.iot.vmp.service.IMediaServerService;
 import com.genersoft.iot.vmp.service.bean.SSRCInfo;
 import com.genersoft.iot.vmp.utils.DateUtil;
@@ -277,7 +279,7 @@ public class SIPCommander implements ISIPCommander {
      * @param errorEvent sip错误订阅
      */
     @Override
-    public void playStreamCmd(MediaServerItem mediaServerItem, SSRCInfo ssrcInfo, Device device, String channelId,boolean isSubStream,
+    public void playStreamCmd(MediaServerItem mediaServerItem, SSRCInfo ssrcInfo, Device device, String channelId,
                               ZlmHttpHookSubscribe.Event event, SipSubscribe.Event okEvent, SipSubscribe.Event errorEvent) throws InvalidArgumentException, SipException, ParseException {
         String stream = ssrcInfo.getStream();
 
@@ -287,9 +289,9 @@ public class SIPCommander implements ISIPCommander {
 
         logger.info("{} 分配的ZLM为: {} [{}:{}]", stream, mediaServerItem.getId(), mediaServerItem.getSdpIp(), ssrcInfo.getPort());
         HookSubscribeForStreamChange hookSubscribe = HookSubscribeFactory.on_stream_changed("rtp", stream, true, "rtsp", mediaServerItem.getId());
-        subscribe.addSubscribe(hookSubscribe, (MediaServerItem mediaServerItemInUse, JSONObject json) -> {
+        subscribe.addSubscribe(hookSubscribe, (MediaServerItem mediaServerItemInUse, HookParam hookParam) -> {
             if (event != null) {
-                event.response(mediaServerItemInUse, json);
+                event.response(mediaServerItemInUse, hookParam);
                 subscribe.removeSubscribe(hookSubscribe);
             }
         });
@@ -354,13 +356,13 @@ public class SIPCommander implements ISIPCommander {
 
         if( device.isSwitchPrimarySubStream() ){
             if("TP-LINK".equals(device.getManufacturer())){
-                if (isSubStream){
+                if (device.isSwitchPrimarySubStream()){
                     content.append("a=streamMode:sub\r\n");
                 }else {
                     content.append("a=streamMode:main\r\n");
                 }
             }else {
-                if (isSubStream){
+                if (device.isSwitchPrimarySubStream()){
                     content.append("a=streamprofile:1\r\n");
                 }else {
                     content.append("a=streamprofile:0\r\n");
@@ -380,14 +382,10 @@ public class SIPCommander implements ISIPCommander {
             mediaServerService.releaseSsrc(mediaServerItem.getId(), ssrcInfo.getSsrc());
             errorEvent.response(e);
         }), e -> {
-            // 这里为例避免一个通道的点播只有一个callID这个参数使用一个固定值
             ResponseEvent responseEvent = (ResponseEvent) e.event;
             SIPResponse response = (SIPResponse) responseEvent.getResponse();
-            if(device.isSwitchPrimarySubStream()){
-                streamSession.put(device.getDeviceId(), channelId, "switch-play", stream, ssrcInfo.getSsrc(), mediaServerItem.getId(), response, InviteSessionType.PLAY);
-            }else {
-                streamSession.put(device.getDeviceId(), channelId, "play", stream, ssrcInfo.getSsrc(), mediaServerItem.getId(), response, InviteSessionType.PLAY);
-            }
+            streamSession.put(device.getDeviceId(), channelId, "play", stream, ssrcInfo.getSsrc(), mediaServerItem.getId(), response,
+                    InviteSessionType.PLAY);
             okEvent.response(e);
         });
     }
@@ -477,9 +475,9 @@ public class SIPCommander implements ISIPCommander {
 
         HookSubscribeForStreamChange hookSubscribe = HookSubscribeFactory.on_stream_changed("rtp", ssrcInfo.getStream(), true, "rtsp", mediaServerItem.getId());
         // 添加订阅
-        subscribe.addSubscribe(hookSubscribe, (MediaServerItem mediaServerItemInUse, JSONObject json) -> {
+        subscribe.addSubscribe(hookSubscribe, (MediaServerItem mediaServerItemInUse, HookParam hookParam) -> {
             if (hookEvent != null) {
-                hookEvent.response(mediaServerItemInUse, json);
+                hookEvent.response(mediaServerItemInUse, hookParam);
             }
             subscribe.removeSubscribe(hookSubscribe);
         });
@@ -580,26 +578,24 @@ public class SIPCommander implements ISIPCommander {
         // 添加订阅
         CallIdHeader newCallIdHeader = sipSender.getNewCallIdHeader(sipLayer.getLocalIp(device.getLocalIp()), device.getTransport());
         String callId= newCallIdHeader.getCallId();
-        subscribe.addSubscribe(hookSubscribe, (MediaServerItem mediaServerItemInUse, JSONObject json) -> {
+        subscribe.addSubscribe(hookSubscribe, (mediaServerItemInUse, hookParam) -> {
             logger.debug("sipc 添加订阅===callId {}",callId);
-            hookEvent.response(mediaServerItemInUse, json);
+            hookEvent.response(mediaServerItemInUse, hookParam);
             subscribe.removeSubscribe(hookSubscribe);
             hookSubscribe.getContent().put("regist", false);
             hookSubscribe.getContent().put("schema", "rtsp");
             // 添加流注销的订阅，注销了后向设备发送bye
             subscribe.addSubscribe(hookSubscribe,
-                    (MediaServerItem mediaServerItemForEnd, JSONObject jsonForEnd) -> {
-                        logger.info("[录像]下载结束， 暂时取消发送BYE 直接合成录像并通知manage服务");
-                        logger.info(mediaServerItemInUse.getId());
-                        logger.info(ssrcInfo.getStream());
+                    (mediaServerItemForEnd, hookParam1) -> {
+                        logger.info("[录像]下载结束， 发送BYE");
+                        // 发送录像合成
                         complexVideo(mediaServerItemInUse.getId(), ssrcInfo.getStream());
-                        // logger.info("[录像]下载结束， 发送BYE");
-                        // try {
-                        //     streamByeCmd(device, channelId, ssrcInfo.getStream(), callId);
-                        // } catch (InvalidArgumentException | ParseException | SipException |
-                        //          SsrcTransactionNotFoundException e) {
-                        //     logger.error("[录像]下载结束， 发送BYE失败 {}", e.getMessage());
-                        // }
+                        try {
+                            streamByeCmd(device, channelId, ssrcInfo.getStream(), callId);
+                        } catch (InvalidArgumentException | ParseException | SipException |
+                                 SsrcTransactionNotFoundException e) {
+                            logger.error("[录像]下载结束， 发送BYE失败 {}", e.getMessage());
+                        }
                     });
         });
 

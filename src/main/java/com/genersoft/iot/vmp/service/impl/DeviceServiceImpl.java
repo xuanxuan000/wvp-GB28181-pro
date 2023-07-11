@@ -1,6 +1,5 @@
 package com.genersoft.iot.vmp.service.impl;
 
-import com.genersoft.iot.vmp.common.InviteSessionType;
 import com.genersoft.iot.vmp.common.VideoManagerConstants;
 import com.genersoft.iot.vmp.conf.DynamicTask;
 import com.genersoft.iot.vmp.conf.UserSetting;
@@ -390,8 +389,8 @@ public class DeviceServiceImpl implements IDeviceService {
         if (device == null) {
             return null;
         }
-        if (ObjectUtils.isEmpty(parentId) || parentId.equals(deviceId)) {
-            parentId = null;
+        if (ObjectUtils.isEmpty(parentId) ) {
+            parentId = deviceId;
         }
         List<DeviceChannel> rootNodes = deviceChannelMapper.getSubChannelsByDeviceId(deviceId, parentId, onlyCatalog);
         return transportChannelsToTree(rootNodes, "");
@@ -494,8 +493,12 @@ public class DeviceServiceImpl implements IDeviceService {
         if (!ObjectUtils.isEmpty(device.getMediaServerId())) {
             deviceInStore.setMediaServerId(device.getMediaServerId());
         }
-        deviceInStore.setSdpIp(device.getSdpIp());
-        deviceInStore.setCharset(device.getCharset());
+        if (!ObjectUtils.isEmpty(device.getCharset())) {
+            deviceInStore.setCharset(device.getCharset());
+        }
+        if (!ObjectUtils.isEmpty(device.getSdpIp())) {
+            deviceInStore.setSdpIp(device.getSdpIp());
+        }
 
         //  目录订阅相关的信息
         if (device.getSubscribeCycleForCatalog() > 0) {
@@ -526,10 +529,18 @@ public class DeviceServiceImpl implements IDeviceService {
                 removeMobilePositionSubscribe(deviceInStore);
             }
         }
-        // 坐标系变化，需要重新计算GCJ02坐标和WGS84坐标
-        if (!deviceInStore.getGeoCoordSys().equals(device.getGeoCoordSys())) {
-            updateDeviceChannelGeoCoordSys(device);
+        if (deviceInStore.getGeoCoordSys() != null) {
+            // 坐标系变化，需要重新计算GCJ02坐标和WGS84坐标
+            if (!deviceInStore.getGeoCoordSys().equals(device.getGeoCoordSys())) {
+                updateDeviceChannelGeoCoordSys(device);
+            }
+        }else {
+            device.setGeoCoordSys("WGS84");
         }
+        if (device.getCharset() == null) {
+            device.setCharset("GB2312");
+        }
+
         // 更新redis
         redisCatchStorage.updateDevice(device);
         deviceMapper.updateCustom(device);

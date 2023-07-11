@@ -11,11 +11,9 @@ import com.genersoft.iot.vmp.gb28181.bean.Device;
 import com.genersoft.iot.vmp.gb28181.transmit.callback.DeferredResultHolder;
 import com.genersoft.iot.vmp.gb28181.transmit.callback.RequestMessage;
 import com.genersoft.iot.vmp.gb28181.transmit.cmd.impl.SIPCommander;
-import com.genersoft.iot.vmp.media.zlm.ZLMRTPServerFactory;
 import com.genersoft.iot.vmp.service.IInviteStreamService;
 import com.genersoft.iot.vmp.service.IPlayService;
 import com.genersoft.iot.vmp.service.bean.InviteErrorCode;
-import com.genersoft.iot.vmp.storager.IRedisCatchStorage;
 import com.genersoft.iot.vmp.storager.IVideoManagerStorage;
 import com.genersoft.iot.vmp.vmanager.bean.ErrorCode;
 import com.genersoft.iot.vmp.vmanager.bean.StreamContent;
@@ -54,13 +52,7 @@ public class PlaybackController {
 	private SIPCommander cmder;
 
 	@Autowired
-	private ZLMRTPServerFactory zlmrtpServerFactory;
-
-	@Autowired
 	private IVideoManagerStorage storager;
-
-	@Autowired
-	private IRedisCatchStorage redisCatchStorage;
 
 	@Autowired
 	private IInviteStreamService inviteStreamService;
@@ -107,7 +99,7 @@ public class PlaybackController {
 						if (data != null) {
 							StreamInfo streamInfo = (StreamInfo)data;
 							if (userSetting.getUseSourceIpAsStreamIp()) {
-								streamInfo.channgeStreamIp(request.getLocalName());
+								streamInfo.channgeStreamIp(request.getLocalAddr());
 							}
 							wvpResult.setData(new StreamContent(streamInfo));
 						}

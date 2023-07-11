@@ -32,6 +32,7 @@ create table wvp_device (
                             as_message_channel bool default false,
                             keepalive_interval_time integer,
                             switch_primary_sub_stream bool default false,
+                            broadcast_push_after_ack bool default false,
                             constraint uk_device_device unique (device_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;;
 
@@ -53,6 +54,7 @@ create table wvp_device_channel (
                                     id serial primary key ,
                                     channel_id character varying(50) not null,
                                     name character varying(255),
+                                    custom_name character varying(255),
                                     manufacture character varying(50),
                                     model character varying(50),
                                     owner character varying(50),
@@ -71,9 +73,12 @@ create table wvp_device_channel (
                                     port integer,
                                     password character varying(255),
                                     ptz_type integer,
+                                    custom_ptz_type integer,
                                     status bool default false,
                                     longitude double precision,
+                                    custom_longitude double precision,
                                     latitude double precision,
+                                    custom_latitude double precision,
                                     stream_id character varying(50),
                                     device_id character varying(50) not null,
                                     parental character varying(50),
@@ -153,6 +158,7 @@ create table wvp_media_server (
                                   secret character varying(50),
                                   rtp_enable bool default false,
                                   rtp_port_range character varying(50),
+                                  send_rtp_port_range character varying(50),
                                   record_assist_port integer,
                                   default_server bool default false,
                                   create_time character varying(50),
@@ -277,6 +283,17 @@ create table wvp_user_role (
                                create_time character varying(50),
                                update_time character varying(50)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;;
+
+create table wvp_resources_tree (
+                                    id serial primary key ,
+                                    is_catalog bool default true,
+                                    device_channel_id integer ,
+                                    gb_stream_id integer,
+                                    name character varying(255),
+                                    parentId integer,
+                                    path character varying(255)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;
+
 
 /*初始数据*/
 INSERT INTO wvp_user VALUES (1, 'admin','21232f297a57a5a743894a0e4a801fc3',1,'2021-04-13 14:14:57','2021-04-13 14:14:57','3e80d1762a324d5b0ff636e0bd16f1e3');

@@ -9,7 +9,7 @@ import com.genersoft.iot.vmp.gb28181.transmit.SIPSender;
 import com.genersoft.iot.vmp.gb28181.transmit.cmd.ISIPCommanderForPlatform;
 import com.genersoft.iot.vmp.gb28181.transmit.cmd.SIPRequestHeaderPlarformProvider;
 import com.genersoft.iot.vmp.gb28181.utils.SipUtils;
-import com.genersoft.iot.vmp.media.zlm.ZLMRTPServerFactory;
+import com.genersoft.iot.vmp.media.zlm.ZLMServerFactory;
 import com.genersoft.iot.vmp.media.zlm.dto.MediaServerItem;
 import com.genersoft.iot.vmp.service.IMediaServerService;
 import com.genersoft.iot.vmp.service.bean.GPSMsgInfo;
@@ -56,7 +56,7 @@ public class SIPCommanderFroPlatform implements ISIPCommanderForPlatform {
     private SipSubscribe sipSubscribe;
 
     @Autowired
-    private ZLMRTPServerFactory zlmrtpServerFactory;
+    private ZLMServerFactory zlmServerFactory;
 
     @Autowired
     private SipLayer sipLayer;
@@ -214,6 +214,9 @@ public class SIPCommanderFroPlatform implements ISIPCommanderForPlatform {
                     continue;
                 }else {
                     if (channel.getChannelId().length() != 20) {
+                        catalogXml.append("</Item>\r\n");
+                        logger.warn("[编号长度异常] {} 长度错误，请使用20位长度的国标编号,当前长度：{}", channel.getChannelId(), channel.getChannelId().length());
+                        catalogXml.append("</Item>\r\n");
                         continue;
                     }
                     switch (Integer.parseInt(channel.getChannelId().substring(10, 13))){
@@ -817,7 +820,7 @@ public class SIPCommanderFroPlatform implements ISIPCommanderForPlatform {
         MediaServerItem mediaServerItem = mediaServerService.getOne(mediaServerId);
         if (mediaServerItem != null) {
             mediaServerService.releaseSsrc(mediaServerItem.getId(), sendRtpItem.getSsrc());
-            zlmrtpServerFactory.closeRtpServer(mediaServerItem, sendRtpItem.getStreamId());
+            zlmServerFactory.closeRtpServer(mediaServerItem, sendRtpItem.getStreamId());
         }
         SIPRequest byeRequest = headerProviderPlatformProvider.createByeRequest(parentPlatform, sendRtpItem);
         if (byeRequest == null) {

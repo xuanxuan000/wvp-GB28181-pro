@@ -22,6 +22,7 @@ import com.genersoft.iot.vmp.media.zlm.dto.StreamAuthorityInfo;
 import com.genersoft.iot.vmp.media.zlm.dto.StreamProxyItem;
 import com.genersoft.iot.vmp.media.zlm.dto.hook.*;
 import com.genersoft.iot.vmp.service.*;
+import com.genersoft.iot.vmp.service.bean.MessageForPushChannel;
 import com.genersoft.iot.vmp.storager.IRedisCatchStorage;
 import com.genersoft.iot.vmp.storager.IVideoManagerStorage;
 import com.genersoft.iot.vmp.vmanager.bean.ErrorCode;
@@ -124,14 +125,12 @@ public class ZLMHttpHookListener {
     @PostMapping(value = "/on_server_keepalive", produces = "application/json;charset=UTF-8")
     public HookResult onServerKeepalive(@RequestBody OnServerKeepaliveHookParam param) {
 
-//        logger.info("[ZLM HOOK] 收到zlm心跳：" + param.getMediaServerId());
 
         taskExecutor.execute(() -> {
             List<ZlmHttpHookSubscribe.Event> subscribes = this.subscribe.getSubscribes(HookType.on_server_keepalive);
-            JSONObject json = (JSONObject) JSON.toJSON(param);
             if (subscribes != null && subscribes.size() > 0) {
                 for (ZlmHttpHookSubscribe.Event subscribe : subscribes) {
-                    subscribe.response(null, json);
+                    subscribe.response(null, param);
                 }
             }
         });
@@ -158,7 +157,7 @@ public class ZLMHttpHookListener {
             if (subscribe != null) {
                 MediaServerItem mediaInfo = mediaServerService.getOne(mediaServerId);
                 if (mediaInfo != null) {
-                    subscribe.response(mediaInfo, json);
+                    subscribe.response(mediaInfo, param);
                 }
             }
         });
@@ -234,7 +233,7 @@ public class ZLMHttpHookListener {
             ZlmHttpHookSubscribe.Event subscribe = this.subscribe.sendNotify(HookType.on_publish, json);
             if (subscribe != null) {
                 if (mediaInfo != null) {
-                    subscribe.response(mediaInfo, json);
+                    subscribe.response(mediaInfo, param);
                 } else {
                     new HookResultForOnPublish(1, "zlm not register");
                 }
@@ -306,7 +305,7 @@ public class ZLMHttpHookListener {
                 return;
             }
             if (subscribe != null) {
-                subscribe.response(mediaInfo, json);
+                subscribe.response(mediaInfo, param);
             }
 
             List<OnStreamChangedHookParam.MediaTrack> tracks = param.getTracks();
@@ -345,19 +344,10 @@ public class ZLMHttpHookListener {
                 }
 
                 if ("rtp".equals(param.getApp()) && !param.isRegist()) {
-                    if(param.getStream().split("_").length == 3){
-                        boolean isSubStream = "sub".equals(param.getStream().split("_")[0]);
-                        InviteInfo inviteInfo = inviteStreamService.getInviteInfoByStream(null, param.getStream(), isSubStream);
-                        if(inviteInfo != null && (inviteInfo.getType() == InviteSessionType.PLAY )){
-                            inviteStreamService.removeInviteInfo(inviteInfo.getType(),inviteInfo.getDeviceId(),
-                                    inviteInfo.getChannelId(),inviteInfo.isSubStream(),inviteInfo.getStream());
-                        }
-                    }else {
-                        InviteInfo inviteInfo = inviteStreamService.getInviteInfoByStream(null, param.getStream());
-                        if (inviteInfo != null && (inviteInfo.getType() == InviteSessionType.PLAY || inviteInfo.getType() == InviteSessionType.PLAYBACK)) {
-                            inviteStreamService.removeInviteInfo(inviteInfo);
-                            storager.stopPlay(inviteInfo.getDeviceId(), inviteInfo.getChannelId());
-                        }
+                    InviteInfo inviteInfo = inviteStreamService.getInviteInfoByStream(null, param.getStream());
+                    if (inviteInfo != null && (inviteInfo.getType() == InviteSessionType.PLAY || inviteInfo.getType() == InviteSessionType.PLAYBACK)) {
+                        inviteStreamService.removeInviteInfo(inviteInfo);
+                        storager.stopPlay(inviteInfo.getDeviceId(), inviteInfo.getChannelId());
                     }
                 } else {
                     if (!"rtp".equals(param.getApp())) {
@@ -395,7 +385,9 @@ public class ZLMHttpHookListener {
                         }
                         GbStream gbStream = storager.getGbStream(param.getApp(), param.getStream());
                         if (gbStream != null) {
-                            eventPublisher.catalogEventPublishForStream(null, gbStream, param.isRegist()?CatalogEvent.ON:CatalogEvent.OFF);
+                            if (userSetting.isUsePushingAsStatus()) {
+                                eventPublisher.catalogEventPublishForStream(null, gbStream, param.isRegist()?CatalogEvent.ON:CatalogEvent.OFF);
+                            }
                         }
                         if (type != null) {
                             // 发送流变化redis消息
@@ -455,8 +447,6 @@ public class ZLMHttpHookListener {
         if ("rtp".equals(param.getApp())) {
             ret.put("close", userSetting.getStreamOnDemand());
             // 国标流， 点播/录像回放/录像下载
-//            StreamInfo streamInfoForPlayCatch = redisCatchStorage.queryPlayByStreamId(param.getStream());
-
             InviteInfo inviteInfo = inviteStreamService.getInviteInfoByStream(null, param.getStream());
             // 点播
             if (inviteInfo != null) {
@@ -479,21 +469,21 @@ public class ZLMHttpHookListener {
                             }
                             redisCatchStorage.deleteSendRTPServer(parentPlatform.getServerGBId(), sendRtpItem.getChannelId(),
                                     sendRtpItem.getCallId(), sendRtpItem.getStreamId());
+                            if (InviteStreamType.PUSH == sendRtpItem.getPlayType()) {
+                                MessageForPushChannel messageForPushChannel = MessageForPushChannel.getInstance(0,
+                                        sendRtpItem.getApp(), sendRtpItem.getStreamId(), sendRtpItem.getChannelId(),
+                                        sendRtpItem.getPlatformId(), parentPlatform.getName(), userSetting.getServerId(), sendRtpItem.getMediaServerId());
+                                messageForPushChannel.setPlatFormIndex(parentPlatform.getId());
+                                redisCatchStorage.sendPlatformStopPlayMsg(messageForPushChannel);
+                            }
                         }
                     }
                 }
                 Device device = deviceService.getDevice(inviteInfo.getDeviceId());
                 if (device != null) {
                     try {
-                        InviteInfo info = null;
-                        if(device.isSwitchPrimarySubStream()){
-                            boolean isSubStream = "sub".equals(param.getStream().split("_")[0]);
-                            info = inviteStreamService.getInviteInfo(inviteInfo.getType(), inviteInfo.getDeviceId(), inviteInfo.getChannelId(),isSubStream, inviteInfo.getStream());
-                        }else {
-                            info = inviteStreamService.getInviteInfo(inviteInfo.getType(), inviteInfo.getDeviceId(), inviteInfo.getChannelId(), inviteInfo.getStream());
-
-                        }
-
+                        InviteInfo info = inviteStreamService.getInviteInfo(inviteInfo.getType(),
+                                inviteInfo.getDeviceId(), inviteInfo.getChannelId(), inviteInfo.getStream());
                         if (info != null) {
                             cmder.streamByeCmd(device, inviteInfo.getChannelId(),
                                     inviteInfo.getStream(), null);
@@ -504,15 +494,9 @@ public class ZLMHttpHookListener {
                     }
                 }
 
-                if(device.isSwitchPrimarySubStream()){
-                    boolean isSubStream = "sub".equals(param.getStream().split("_")[0]);
-                    inviteStreamService.removeInviteInfo(inviteInfo.getType(), inviteInfo.getDeviceId(),
-                            inviteInfo.getChannelId(),isSubStream, inviteInfo.getStream());
-                }else {
-                    inviteStreamService.removeInviteInfo(inviteInfo.getType(), inviteInfo.getDeviceId(),
-                            inviteInfo.getChannelId(), inviteInfo.getStream());
-                    storager.stopPlay(inviteInfo.getDeviceId(), inviteInfo.getChannelId());
-                }
+                inviteStreamService.removeInviteInfo(inviteInfo.getType(), inviteInfo.getDeviceId(),
+                        inviteInfo.getChannelId(), inviteInfo.getStream());
+                storager.stopPlay(inviteInfo.getDeviceId(), inviteInfo.getChannelId());
                 return ret;
             }
         } else {
@@ -520,7 +504,7 @@ public class ZLMHttpHookListener {
             // 拉流代理
             StreamProxyItem streamProxyItem = streamProxyService.getStreamProxyByAppAndStream(param.getApp(), param.getStream());
             if (streamProxyItem != null) {
-                if (streamProxyItem.isEnableDisableNoneReader()) {
+                if (streamProxyItem.isEnableRemoveNoneReader()) {
                     // 无人观看自动移除
                     ret.put("close", true);
                     streamProxyService.del(param.getApp(), param.getStream());
@@ -537,7 +521,7 @@ public class ZLMHttpHookListener {
                 }
                 return ret;
             }
-            // 推流具有主动性，暂时不做处理
+            // TODO 推流具有主动性，暂时不做处理
 //			StreamPushItem streamPushItem = streamPushService.getPush(app, streamId);
 //			if (streamPushItem != null) {
 //				// TODO 发送停止
@@ -565,26 +549,12 @@ public class ZLMHttpHookListener {
 
         if ("rtp".equals(param.getApp())) {
             String[] s = param.getStream().split("_");
-            if (!mediaInfo.isRtpEnable() ) {
-                defaultResult.setResult(HookResult.SUCCESS());
-                return defaultResult;
-            }else if(s.length != 2 && s.length != 3 ){
+            if (!mediaInfo.isRtpEnable() || s.length != 2) {
                 defaultResult.setResult(HookResult.SUCCESS());
                 return defaultResult;
             }
-            String deviceId = null;
-            String channelId = null;
-            boolean isSubStream = false;
-            if (s[0].length() < 20) {
-                if ("sub".equals(s[0])) {
-                    isSubStream = true;
-                }
-                deviceId = s[1];
-                channelId = s[2];
-            } else {
-                deviceId = s[0];
-                channelId = s[1];
-            }
+            String deviceId = s[0];
+            String channelId = s[1];
             Device device = redisCatchStorage.getDevice(deviceId);
             if (device == null) {
                 defaultResult.setResult(new HookResult(ErrorCode.ERROR404.getCode(), ErrorCode.ERROR404.getMsg()));
@@ -598,7 +568,7 @@ public class ZLMHttpHookListener {
             logger.info("[ZLM HOOK] 流未找到, 发起自动点播：{}->{}->{}/{}", param.getMediaServerId(), param.getSchema(), param.getApp(), param.getStream());
 
             RequestMessage msg = new RequestMessage();
-            String key = DeferredResultHolder.getPlayKey(deviceId, channelId, device.isSwitchPrimarySubStream(), isSubStream);
+            String key = DeferredResultHolder.CALLBACK_CMD_PLAY + deviceId + channelId;
             boolean exist = resultHolder.exist(key, null);
             msg.setKey(key);
             String uuid = UUID.randomUUID().toString();
@@ -616,7 +586,7 @@ public class ZLMHttpHookListener {
             resultHolder.put(key, uuid, result);
 
             if (!exist) {
-                playService.play(mediaInfo, deviceId, channelId,isSubStream, (code, message, data) -> {
+                playService.play(mediaInfo, deviceId, channelId, (code, message, data) -> {
                     msg.setData(new HookResult(code, message));
                     resultHolder.invokeResult(msg);
                 });
@@ -649,7 +619,7 @@ public class ZLMHttpHookListener {
             List<ZlmHttpHookSubscribe.Event> subscribes = this.subscribe.getSubscribes(HookType.on_server_started);
             if (subscribes != null && subscribes.size() > 0) {
                 for (ZlmHttpHookSubscribe.Event subscribe : subscribes) {
-                    subscribe.response(null, jsonObject);
+                    subscribe.response(null, zlmServerConfig);
                 }
             }
             mediaServerService.zlmServerOnline(zlmServerConfig);
@@ -704,7 +674,7 @@ public class ZLMHttpHookListener {
             List<ZlmHttpHookSubscribe.Event> subscribes = this.subscribe.getSubscribes(HookType.on_rtp_server_timeout);
             if (subscribes != null && subscribes.size() > 0) {
                 for (ZlmHttpHookSubscribe.Event subscribe : subscribes) {
-                    subscribe.response(null, json);
+                    subscribe.response(null, param);
                 }
             }
         });

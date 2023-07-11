@@ -8,6 +8,7 @@ import com.genersoft.iot.vmp.gb28181.bean.Device;
 import com.genersoft.iot.vmp.gb28181.bean.DeviceChannel;
 import com.genersoft.iot.vmp.gb28181.event.subscribe.catalog.CatalogEvent;
 import com.genersoft.iot.vmp.utils.DateUtil;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -317,7 +318,6 @@ public class XmlUtil {
                         deviceChannel.setBusinessGroupId(businessGroupID);
                     }
 
-
                     if (!ObjectUtils.isEmpty(parentID)) {
                         if (parentID.contains("/")) {
                             String[] parentIdArray = parentID.split("/");
@@ -341,7 +341,11 @@ public class XmlUtil {
                     if (!ObjectUtils.isEmpty(owner)) {
                         deviceChannel.setOwner(owner);
                     }
-                    if (!ObjectUtils.isEmpty(civilCode)) {
+                    if (!ObjectUtils.isEmpty(civilCode)
+                            && civilCode.length() <= 8
+                            && NumberUtils.isParsable(civilCode)
+                            && Integer.parseInt(civilCode)%2 == 0
+                    ) {
                         deviceChannel.setCivilCode(civilCode);
                     }
                     if (!ObjectUtils.isEmpty(businessGroupID)) {
@@ -376,19 +380,24 @@ public class XmlUtil {
                         }
                     }
                     // 父设备/区域/系统ID
-                    String realParentId = parentID;
-                    if (!ObjectUtils.isEmpty(parentID)) {
+
+                    if (!ObjectUtils.isEmpty(parentID) ) {
                         if (parentID.contains("/")) {
                             String[] parentIdArray = parentID.split("/");
-                            realParentId = parentIdArray[parentIdArray.length - 1];
+                            deviceChannel.setParentId(parentIdArray[parentIdArray.length - 1]);
+                        }else {
+                            if (parentID.length()%2 == 0) {
+                                deviceChannel.setParentId(parentID);
+                            }else {
+                                logger.warn("[xml解析] 不规范的parentID：{}, 已舍弃", parentID);
+                            }
                         }
-                        deviceChannel.setParentId(realParentId);
                     }else {
                         if (!ObjectUtils.isEmpty(businessGroupID)) {
                             deviceChannel.setParentId(businessGroupID);
                         }else {
-                            if (!ObjectUtils.isEmpty(civilCode)) {
-                                deviceChannel.setParentId(civilCode);
+                            if (!ObjectUtils.isEmpty(deviceChannel.getCivilCode())) {
+                                deviceChannel.setParentId(deviceChannel.getCivilCode());
                             }
                         }
                     }

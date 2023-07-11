@@ -125,7 +125,7 @@ public class SipUtils {
         strTmp = String.format("%02X", moveSpeed);
         builder.append(strTmp, 0, 2);
         builder.append(strTmp, 0, 2);
-        
+
         //优化zoom低倍速下的变倍速率
         if ((zoomSpeed > 0) && (zoomSpeed <16))
         {
@@ -250,7 +250,6 @@ public class SipUtils {
         if (ObjectUtils.isEmpty(timeStr)){
             return null;
         }
-        System.out.println(timeStr);
         LocalDateTime localDateTime;
         try {
             localDateTime = LocalDateTime.parse(timeStr);

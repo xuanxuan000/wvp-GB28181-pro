@@ -2,6 +2,7 @@ spring:
   application:
     name: wvp
   profiles:
+<<<<<<< HEAD
     active: dev
 
 # 作为28181服务器的配置
@@ -71,3 +72,6 @@ media:
         port-range: 30000,30500 # 端口范围
     # 录像辅助服务， 部署此服务可以实现zlm录像的管理与下载， 0 表示不使用
     record-assist-port: 0
+=======
+    active: local
+>>>>>>> wvp-28181-2.0

@@ -457,10 +457,10 @@ public interface DeviceChannelMapper {
     // 设备主子码流逻辑END
     @Select(value = {" <script>" +
             "select * " +
-            "from device_channel " +
+            "from wvp_device_channel " +
             "where device_id=#{deviceId}" +
-            " <if test='parentId != null '> and parent_id = #{parentId} </if>" +
-            " <if test='parentId == null '> and parent_id is null </if>" +
+            " <if test='parentId != null and parentId != deviceId'> and parent_id = #{parentId} </if>" +
+            " <if test='parentId == null or parentId == deviceId'> and parent_id is null or parent_id = #{deviceId}</if>" +
             " <if test='onlyCatalog == true '> and parental = 1 </if>" +
             " </script>"})
     List<DeviceChannel> getSubChannelsByDeviceId(String deviceId, String parentId, boolean onlyCatalog);
