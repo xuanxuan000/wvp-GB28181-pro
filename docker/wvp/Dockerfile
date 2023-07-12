@@ -9,9 +9,23 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         apt-get update && \
         apt-get install -y --no-install-recommends openjdk-11-jre git maven nodejs npm build-essential \
         cmake ca-certificates openssl ffmpeg && \
-        mkdir -p /opt/wvp/config /opt/wvp/heapdump /opt/wvp/config /opt/assist/config /opt/assist/heapdump /opt/media/www/record && \
-        
-        cd /home && \
+        mkdir -p /opt/wvp/config /opt/wvp/heapdump /opt/wvp/config /opt/assist/config /opt/assist/heapdump /opt/media/www/record
+
+# 分层便于二次构建
+# zlm编译
+RUN cd /home && \
+        git clone --depth=1 "${zlmGitUrl}" && \
+        cd /home/ZLMediaKit && \
+        git submodule update --init --recursive && \
+        mkdir -p build release/linux/Release/ &&\
+        cd build && \
+        cmake -DCMAKE_BUILD_TYPE=Release .. && \
+        make -j4 && \
+        rm -rf ../release/linux/Release/config.ini && \
+        cp -r ../release/linux/Release/* /opt/media
+
+# 分层便于二次构建
+RUN cd /home && \
         git clone -b huahua "${gitUrl}" && \
 
         # settings.xml
@@ -32,18 +46,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         cd /home/wvp-GB28181-pro/wvp-pro-assist && \
         mvn clean package -Dmaven.test.skip=true && \
         cp /home/wvp-GB28181-pro/wvp-pro-assist/target/*.jar /opt/assist/ && \
-
-        # zlm编译
-        cd /home && \
-        git clone --depth=1 "${zlmGitUrl}" && \
-        cd /home/ZLMediaKit && \
-        git submodule update --init --recursive && \
-        mkdir -p build release/linux/Release/ &&\
-        cd build && \
-        cmake -DCMAKE_BUILD_TYPE=Release .. && \
-        make -j4 && \
-        rm -rf ../release/linux/Release/config.ini && \
-        cp -r ../release/linux/Release/* /opt/media && \
 
         cd /opt/wvp && \
         echo '#!/bin/bash' > run.sh && \
