@@ -17,7 +17,7 @@ services:
     #   args:
     #     gitUrl: "https://gitee.com/pan648540858"
     #     zlmGitUrl: "https://gitee.com/xia-chu/ZLMediaKit"
-    image: huahua000/wvp:v1
+    image: huahua000/wvp:v3
     restart: always
     ports:
       - "5060:5060"
@@ -26,10 +26,11 @@ services:
       - "80:80"
       - "10000:10000/tcp"
       - "10000:10000/udp"
-      - "30000-30500:30000-30500/tcp"
-      - "30000-30500:30000-30500/udp"
+      - "30000-30100:30000-30100/tcp"
+      - "30000-30100:30000-30100/udp"
     volumes:
       - ./video:/opt/media/www/record/
+      - ./snap:/opt/wvp/snap/
       - ./logs/wvp:/opt/wvp/logs/
       - ./logs/assist:/opt/assist/logs/
       - ./logs/media:/opt/media/log/
